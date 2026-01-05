@@ -50,11 +50,11 @@ SRCA_CONFIG = {
 
     # ===== Training (Section 5.4) =====
     # Paper: Adam optimizer with specific hyperparameters
-    'batch_size': 64,
-    'learning_rate': 0.0001,  # 1e-4
+    'batch_size': 64,  # Paper uses 64
+    'learning_rate': 1e-4,  # Paper uses 1e-4
     'weight_decay': 0.0005,   # 5e-4 (L2 regularization λ)
     'max_epochs': 100,
-    'patience': 10,  # Early stopping
+    'patience': 15,  # Early stopping patience
 
     # ===== Data =====
     # ProgrammableWeb dataset - YOUR ACTUAL DATA

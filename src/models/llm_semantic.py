@@ -129,9 +129,13 @@ class LLMSemanticEncoder(nn.Module):
         """
         Encode text inputs to semantic features.
 
+        CRITICAL FIX: Implements correct two-stage process from SRCA paper Section 4.1.1-4.1.2
+        - Stage 1: Generate unified description D' = M(concat(T, D))  [Eq. 3-4]
+        - Stage 2: Re-encode D' to extract features e_D' = 1/n Σ h_i  [Eq. 5]
+
         Args:
             texts: List of text strings (prompts or raw descriptions)
-            use_generation: If True, generate text first then extract features
+            use_generation: If True, use two-stage generation → re-encoding (paper method)
                           If False, directly extract features from input
 
         Returns:
@@ -152,33 +156,50 @@ class LLMSemanticEncoder(nn.Module):
 
         with torch.no_grad() if self.freeze_llm else torch.enable_grad():
             if use_generation:
-                # Generate unified description first, then extract features
-                # This implements the full SRCA pipeline
-                outputs = self.llm.generate(
+                # ============================================================
+                # CRITICAL FIX: Two-stage process as described in paper
+                # ============================================================
+
+                # Stage 1: Generate unified description D' (Paper Eq. 3-4)
+                logger.info("Stage 1: Generating unified descriptions...")
+                generation_outputs = self.llm.generate(
                     **inputs,
                     max_new_tokens=256,
-                    output_hidden_states=True,
-                    return_dict_in_generate=True,
                     do_sample=False,  # Deterministic for reproducibility
-                    num_beams=1
+                    num_beams=1,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id
                 )
 
-                # Extract hidden states from ALL generated tokens (Paper Eq. 5)
-                # outputs.hidden_states is a tuple: (step_0, step_1, ..., step_n)
-                # Each step contains hidden states from all layers
-                all_hidden_states = []
-                for step_hidden in outputs.hidden_states:
-                    # step_hidden is a tuple of layer outputs
-                    # step_hidden[-1] gets the last layer for this generation step
-                    all_hidden_states.append(step_hidden[-1])  # [batch, seq_len, hidden_size]
+                # generation_outputs.sequences contains the full sequence (prompt + generation)
+                # We need to extract only the generated part for re-encoding
+                generated_ids = generation_outputs  # [batch, seq_len]
 
-                # Concatenate all generation steps along sequence dimension
-                hidden_states = torch.cat(all_hidden_states, dim=1)  # [batch, total_seq_len, hidden_size]
+                # Stage 2: Re-encode the generated description to extract features (Paper Eq. 5)
+                logger.info("Stage 2: Re-encoding generated descriptions to extract semantic features...")
 
-                # Average pooling over all tokens (Paper Eq. 5: e_D' = 1/n * Σh_i)
-                pooled = hidden_states.mean(dim=1)  # [batch, hidden_size]
+                # Re-encode the generated text
+                re_encode_outputs = self.llm(
+                    input_ids=generated_ids,
+                    output_hidden_states=True,
+                    return_dict=True
+                )
+
+                # Extract hidden states from the last layer
+                hidden_states = re_encode_outputs.hidden_states[-1]  # [batch, seq_len, hidden_size]
+
+                # Average pooling over the sequence (Paper Eq. 5: e_D' = 1/n * Σ h_i)
+                # Exclude padding tokens from pooling
+                attention_mask = (generated_ids != self.tokenizer.pad_token_id).float().unsqueeze(-1)  # [batch, seq_len, 1]
+                masked_hidden = hidden_states * attention_mask  # [batch, seq_len, hidden_size]
+
+                # Mean pooling: sum over sequence and divide by number of non-padding tokens
+                pooled = masked_hidden.sum(dim=1) / attention_mask.sum(dim=1).clamp(min=1e-9)  # [batch, hidden_size]
+
+                logger.info(f"✓ Two-stage semantic extraction completed: {pooled.shape}")
+
             else:
-                # Directly extract features from input encoding
+                # Directly extract features from input encoding (no generation)
                 outputs = self.llm(
                     **inputs,
                     output_hidden_states=True,
@@ -191,9 +212,9 @@ class LLMSemanticEncoder(nn.Module):
                 # Average pooling over sequence (excluding padding)
                 attention_mask = inputs['attention_mask'].unsqueeze(-1)  # [batch, seq_len, 1]
                 masked_hidden = hidden_states * attention_mask
-                pooled = masked_hidden.sum(dim=1) / attention_mask.sum(dim=1)  # [batch, hidden_size]
+                pooled = masked_hidden.sum(dim=1) / attention_mask.sum(dim=1).clamp(min=1e-9)  # [batch, hidden_size]
 
-        # Project to semantic dimension (if needed)
+        # Project to semantic dimension (Paper Eq. 8: e^(0)_i = W * e_i + b)
         if self.projection is not None:
             # Ensure projection layer is on the same device as the hidden states
             if self.projection.weight.device != pooled.device:

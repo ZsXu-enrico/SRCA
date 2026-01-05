@@ -2,7 +2,7 @@
 
 This script:
 1. Builds category co-occurrence graph
-2. Initializes SRCA model with TinyLlama
+2. Initializes SRCA model with LLaMA-3.1-8B
 3. Trains with Focal Loss
 4. Evaluates with P@K, R@K, NDCG@K, MAP@K
 """
@@ -53,7 +53,7 @@ def print_gpu_memory(stage=""):
 def main():
     """Main training pipeline."""
     print("=" * 70)
-    print("SRCA Model Training with TinyLlama on SEHGN Dataset")
+    print("SRCA Model Training with LLaMA-3.1-8B on SEHGN Dataset")
     print("=" * 70)
 
     print("\nConfiguration:")
@@ -274,7 +274,7 @@ def main():
     # Logger
     logger_tb = TensorBoardLogger(
         save_dir='./logs',
-        name='srca_tinyllama'
+        name='srca_llama3.1_8b'
     )
 
     # Trainer - Using 1 GPU to avoid DDP memory overhead

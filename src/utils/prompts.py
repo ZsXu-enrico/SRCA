@@ -20,6 +20,17 @@ Requirements for the response:
 - Maintain technical accuracy
 - Exclude implementation details or technical specifications
 
+# Example
+Mashup Name: Padvark.nl
+Original Description: Padvark.nl is a web application that provides users with information on different running and cycling events in the Netherlands, allowing them to track routes and compare with other users, by entering the location of their choice.
+Categories: sports, mapping, social
+
+Output:
+Functional Requirements: Location-based event search functionality, route tracking and visualization, performance comparison features
+Target Scenario: Finding local sports events, planning running or cycling routes, comparing athletic performance
+Target Users: Runners and cyclists seeking organized events and route planning tools
+Expected Outcome: Easy discovery of sports events with integrated route tracking and social comparison capabilities
+
 # Query
 Mashup Name: {name}
 Original Description: {description}
@@ -42,6 +53,17 @@ Requirements for the response:
 - Keep each section concise but informative
 - Maintain technical accuracy
 - Exclude non-functional information (e.g., version history, release dates)
+
+# Example
+API Name: Google Maps
+Original Description: The Google Maps API allow for the embedding of Google Maps onto web pages of outside developers, using a simple JavaScript interface or Flash interface. It is designed to work on mobile devices and desktop browsers.
+Categories: mapping, location
+
+Output:
+Core Functionality: Provides comprehensive mapping and location-based services through embeddable map interfaces
+Key Features: Cross-platform compatibility (mobile and desktop), simple JavaScript and Flash interfaces, interactive map visualization
+Use Cases: Embedding maps in web applications, location visualization, route display, geographic data presentation
+Primary Benefits: Easy integration with web applications, reliable global mapping data, responsive across devices
 
 # Query
 API Name: {name}
