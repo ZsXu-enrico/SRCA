@@ -1,0 +1,49 @@
+# Large files (>100MB - cannot upload to GitHub)
+data/ProgrammableWeb/token_features.pt
+data/ProgrammableWeb/*.pt
+
+# Training outputs
+checkpoints/
+logs/
+lightning_logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Log files
+*.log
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
